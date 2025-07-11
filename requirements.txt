@@ -3,5 +3,5 @@ Pillow
 numpy
 torch==2.2.2
 opencv-python-headless
-git+https://github.com/xinntao/BasicSR.git@master
+basicsr>=1.4.2
 realesrgan
