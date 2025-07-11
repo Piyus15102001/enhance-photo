@@ -3,5 +3,5 @@ Pillow
 numpy
 torch
 opencv-python-headless
-git+https://github.com/cszn/basicsr.git@master
-git+https://github.com/xinntao/Real-ESRGAN.git
+git+https://github.com/xinntao/BasicSR.git@master
+realesrgan
