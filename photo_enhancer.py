@@ -1,79 +1,60 @@
-import streamlit as st
-from PIL import Image, ImageEnhance, ImageOps
-import numpy as np
-import torch
 import os
-import gdown
-import tempfile
+os.environ["PORT"] = "8501"
 
+import streamlit as st
+import numpy as np
+from PIL import Image
+import torch
 from basicsr.archs.rrdbnet_arch import RRDBNet
 from realesrgan import RealESRGANer
+import tempfile
+import gdown
 
-# Download model if not present
-MODEL_PATH = "RealESRGAN_x4plus.pth"
+# ------------------------ Model Setup ------------------------
+
 MODEL_URL = "https://drive.google.com/uc?id=1J9sne4__yo5vA9ZqOY2KQeXrPgcHZf0H"
+MODEL_PATH = "RealESRGAN_x4plus.pth"
 
+# Auto-download model if not exists
 if not os.path.exists(MODEL_PATH):
-    with st.spinner("🔄 Downloading 4K model..."):
+    with st.spinner("📦 Downloading ESRGAN model..."):
         gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
 
-# Setup device
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# Load model
+model = RRDBNet(num_in_ch=3, num_out_ch=3, nf=64, nb=23, gc=32,
+                upscale=4, norm_type=None, act_type='leakyrelu', mode='CNA', res_scale=1,
+                upsample_mode='upconv')
 
-# Streamlit UI
-st.set_page_config(page_title="🖼️ AI Photo Editor", layout="centered")
-st.title("🎨 All-in-One AI Photo Editor")
-st.caption("Upload and enhance your photos using AI tools")
+upscaler = RealESRGANer(
+    scale=4,
+    model_path=MODEL_PATH,
+    model=model,
+    tile=0,
+    tile_pad=10,
+    pre_pad=0,
+    half=True if torch.cuda.is_available() else False
+)
 
-uploaded_file = st.file_uploader("📤 Upload an Image", type=["jpg", "jpeg", "png"])
+# ------------------------ Streamlit UI ------------------------
 
-with st.sidebar:
-    st.header("⚙️ Editing Options")
-    enhance_ai = st.checkbox("🧠 Enhance to 4K (Real-ESRGAN)")
-    color = st.slider("🌈 Color", 0.5, 2.0, 1.0)
-    sharpness = st.slider("✏️ Sharpness", 0.5, 2.0, 1.0)
-    brightness = st.slider("🌟 Brightness", 0.5, 2.0, 1.0)
-    contrast = st.slider("🌗 Contrast", 0.5, 2.0, 1.0)
+st.set_page_config(page_title="📸 Photo Enhancer", layout="centered")
+st.title("✨ AI 4K Photo Enhancer")
+st.caption("Upscale blurry or low-resolution images using Real-ESRGAN.")
+
+uploaded_file = st.file_uploader("Upload an image", type=["png", "jpg", "jpeg"])
 
 if uploaded_file:
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
-        tmp.write(uploaded_file.read())
-        input_path = tmp.name
+    st.image(uploaded_file, caption="Original", use_column_width=True)
 
-    img = ImageOps.exif_transpose(Image.open(input_path).convert("RGB"))
-    st.image(img, caption="🖼️ Original Image", use_container_width=True)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
+        tmp_file.write(uploaded_file.read())
+        input_path = tmp_file.name
 
-    # Apply Enhancements
-    img = ImageEnhance.Color(img).enhance(color)
-    img = ImageEnhance.Sharpness(img).enhance(sharpness)
-    img = ImageEnhance.Brightness(img).enhance(brightness)
-    img = ImageEnhance.Contrast(img).enhance(contrast)
-
-    # Optional: Real-ESRGAN Upscaling
-    if enhance_ai:
-        with st.spinner("📈 Enhancing to 4K using Real-ESRGAN..."):
-            model = RRDBNet(
-                num_in_ch=3, num_out_ch=3,
-                num_feat=64, num_block=23,
-                num_grow_ch=32, scale=4
-            )
-            upsampler = RealESRGANer(
-                scale=4,
-                model_path=MODEL_PATH,
-                model=model,
-                tile=128,
-                tile_pad=10,
-                pre_pad=0,
-                half=torch.cuda.is_available(),
-                device=device
-            )
-            img_np = np.array(img)
-            output, _ = upsampler.enhance(img_np, outscale=4)
-            img = Image.fromarray(output)
-
-    st.image(img, caption="✅ Final Output", use_container_width=True)
-
-    # Download option
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_out:
-        img.save(tmp_out.name)
-        st.download_button("⬇️ Download Edited Image", open(tmp_out.name, "rb").read(), "edited_photo.png")
+    with st.spinner("🔧 Enhancing image..."):
+        img = Image.open(input_path).convert("RGB")
+        img_np = np.array(img)
+        try:
+            output, _ = upscaler.enhance(img_np)
+            st.image(output, caption="Enhanced", use_column_width=True)
+        except Exception as e:
+            st.error(f"Enhancement failed: {e}")
