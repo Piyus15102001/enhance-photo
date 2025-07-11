@@ -1,7 +1,7 @@
 streamlit
 Pillow
 numpy
-torch==2.2.2
+torch>=2.7.1
 opencv-python-headless
 basicsr>=1.4.2
 realesrgan
