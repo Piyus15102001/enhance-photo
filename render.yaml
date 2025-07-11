@@ -1,9 +1,10 @@
 services:
   - type: web
     name: photo-enhancer
-    env: python
+    runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: streamlit run photo_enhancer.py
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.10
+      - key: PORT
+        value: 8501
+    plan: free
