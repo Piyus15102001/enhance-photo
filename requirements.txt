@@ -1,8 +1,8 @@
-torch>=2.0.0
-torchvision
-basicsr @ file://./BasicSR
-realesrgan
 streamlit
 Pillow
 numpy
-
+torch
+opencv-python-headless
+basicsr
+realesrgan
+requests
