@@ -3,7 +3,7 @@ services:
     name: photo-enhancer
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: streamlit run photo_enhancer.py --server.port=10000
+    startCommand: streamlit run photo_enhancer.py
     envVars:
       - key: PYTHON_VERSION
         value: 3.10
