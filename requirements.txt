@@ -1,9 +1,8 @@
 streamlit
 Pillow
 numpy
-torch>=2.7.1
+torch
 opencv-python-headless
-basicsr>=1.4.2
+git+https://github.com/xinntao/BasicSR.git@master
 realesrgan
 gdown
-
